@@ -1,0 +1,5 @@
+__pycache__
+portifolioenv
+.DS_Store
+.vscode
+.env
