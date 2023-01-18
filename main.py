@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -30,6 +30,11 @@ class CreateUser(BaseModel):
     profile_pic: Optional[str]
 
 
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
 def get_db():
     try:
         db = SessionLocal()
@@ -44,8 +49,9 @@ def create_access_token(email: str, id: int, expires_delta: Optional[timedelta] 
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=60)
-    encode.update({"expires": expire})
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    encode.update({"exp": expire})
+
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGOTIGHTM)
 
 
@@ -98,3 +104,30 @@ async def create_user(user: CreateUser, db: Session = Depends(get_db)):
 
     db.add(user_model)
     db.commit()
+
+
+@app.post("/user/token")
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    user = authenticate_user(user.email, user.password, db)
+    print(user.email)
+
+    if not user:
+        raise token_exception()
+
+    token_expires = timedelta(minutes=60)
+    token = create_access_token(
+        user.email, user.id, expires_delta=token_expires)
+
+    return {"token": token}
+
+
+def get_user_exception():
+    credential_exprction = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Não foi possível validar as credenciais", headers={"WWW-Authenticate": "Bearer"})
+    return credential_exprction
+
+
+def token_exception():
+    token_exception_resp = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                         detail="Usuário ou senha icorretos", headers={"WWW-Authenticate": "Bearer"})
+    return token_exception_resp
