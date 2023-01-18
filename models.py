@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, ForeignKey, ARRAY
+from sqlalchemy import Integer, Column, String, ForeignKey, ARRAY, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -27,6 +27,7 @@ class Experiences(Base):
     description = Column(String)
     role = Column(String)
     owner_id = Column(Integer, ForeignKey("users.id"))
+    is_my_current_work = Column(Boolean, default=False)
 
     experienceOwner = relationship("Users", back_populates="experiences")
 
