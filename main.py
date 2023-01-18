@@ -200,6 +200,20 @@ async def update_experience(id: int, experience: Experience, db: Session = Depen
     return successful_response(200, experience)
 
 
+@app.delete("/experience/{id}")
+async def delete_experience(id: int, user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if user is None:
+        raise get_user_exception()
+    
+    exp = db.query(models.Experiences).filter(models.Experiences.id == id).filter(models.Experiences.owner_id == user.get("id")).first()
+
+    if exp is None:
+        raise HTTPException(status_code=404, detail="Experiência não encontrada")
+    
+    db.query(models.Experiences).filter(models.Experiences.id == id).delete()
+    db.commit()
+    return successful_response(200)
+
 
 
 # AÇÕES DOS PROJETOS ------------------------------------------------
