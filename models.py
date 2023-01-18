@@ -38,7 +38,7 @@ class Projects(Base):
     name = Column(String)
     pre_description = Column(String)
     description = Column(String)
-    technologies = Column(ARRAY(String))
+    # technologies = Column(ARRAY(String)) PARA USAR VOU TER QUE USAR O POSTGRES SQL PAR TAL, FAZER ISSO MAIS TARDE OU BUSCAR OUTRA ALTERNATIVA
     year = Column(Integer)
     image = Column(String)
     state = Column(Integer)
