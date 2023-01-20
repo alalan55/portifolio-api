@@ -36,6 +36,18 @@ class CreateUser(BaseModel):
     profile_pic: Optional[str]
 
 
+class UpdateUser(BaseModel):
+    name: str
+    email: str
+    about: Optional[str]
+    profile_pic: Optional[str]
+
+
+class UpdatePassword(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class UserLogin(BaseModel):
     email: str
     password: str
@@ -113,7 +125,6 @@ async def create_user(user: CreateUser, db: Session = Depends(get_db)):
 @router.post("/user/token")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     user = authenticate_user(user.email, user.password, db)
-    print(user.email)
 
     if not user:
         raise token_exception()
@@ -122,7 +133,55 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     token = create_access_token(
         user.email, user.id, expires_delta=token_expires)
 
-    return {"token": token}
+    user.hashed_password = None
+    # return {"token": token, }
+    # VERIFICA O RESPONSE MODEL PARA REMOVER O HASH DE SENHA DA RESPOSTA, RESPONSE MODEL SÓ SERVE SE FOR RETORNADO UM OBJETO INTEIRO
+    return successful_response(200, token, user)
+
+
+@router.put("/user/update/{id}")
+async def update_user(id: int, user: UpdateUser, userLogged: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if userLogged is None:
+        raise get_user_exception()
+
+    user_model = db.query(models.Users).filter(
+        models.Users.id == id and userLogged.get("id")).first()
+
+    if user_model is None:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    user_model.name = user.name
+    user_model.email = user.email
+    user_model.about = user.about
+    user_model.profile_pic = user.profile_pic
+
+    db.add(user_model)
+    db.commit()
+
+    return successful_response(200)
+
+
+@router.put("/user/update-password/{id}")
+async def update_password(id: int, datas: UpdatePassword, userLogged: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if userLogged is None:
+        raise get_user_exception()
+
+    user_model = db.query(models.Users).filter(
+        models.Users.id == id and userLogged.get("id")).first()
+
+    if user_model is None:
+        raise user_not_found()
+
+    if not verify_password(datas.current_password, user_model.hashed_password):
+        raise password_not_confirmed()
+
+    hash_pass = password_hash(datas.new_password)
+    user_model.hashed_password = hash_pass
+
+    db.add(user_model)
+    db.commit()
+
+    return successful_response(200)
 
 
 def get_user_exception():
@@ -131,7 +190,27 @@ def get_user_exception():
     return credential_exprction
 
 
+def user_not_found():
+    return {"status": 404, "message": "Usuário não encontrado"}
+
+
 def token_exception():
     token_exception_resp = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                          detail="Usuário ou senha icorretos", headers={"WWW-Authenticate": "Bearer"})
     return token_exception_resp
+
+
+def password_not_confirmed():
+    resp = HTTPException(status_code=status.HTTP_409_CONFLICT,
+                         detail="Senha atual não confere com a cadastrada no banco de dados")
+    # return {"status": 409, "message": "Senha atual não confere com a cadastrada no banco de dados"}
+    return resp
+
+
+def successful_response(status_code: int, token: Optional[str] = None, content: Optional[dict or list] = None):
+    return {
+        "status": status_code,
+        "message": "Sucesso!",
+        "content": content,
+        "token": token
+    }
