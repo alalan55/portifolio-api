@@ -17,6 +17,16 @@ class Users(Base):
     projects = relationship("Projects", back_populates="projectsOwner")
 
 
+class Courses(Base):
+    __tablename__ = "courses"
+
+    id = Column(Integer, primaty_key=True, index=True)
+    name = Column(String)
+    description = Column(String)
+    start_at = Column(String)
+    end_at = Column(String)
+    pic = Column(String)
+    institution = Column(String)
 class Experiences(Base):
     __tablename__ = "experiences"
 
