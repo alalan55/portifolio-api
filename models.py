@@ -15,6 +15,23 @@ class Users(Base):
 
     experiences = relationship("Experiences", back_populates="experienceOwner")
     projects = relationship("Projects", back_populates="projectsOwner")
+    courses = relationship("Courses", back_populates="coursesOwner")
+
+
+class Courses(Base):
+    __tablename__ = "courses"
+
+    id = Column(Integer,  primary_key=True, index=True)
+    name = Column(String)
+    description = Column(String)
+    start_at = Column(String)
+    end_at = Column(String)
+    pic = Column(String)
+    institution = Column(String)
+    link = Column(String)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+
+    coursesOwner = relationship("Users", back_populates="courses")
 
 
 class Experiences(Base):
