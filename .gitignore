@@ -3,3 +3,4 @@ portifolioenv
 .DS_Store
 .vscode
 .env
+portifolio.db
