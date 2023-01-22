@@ -74,7 +74,7 @@ async def update_course(id: int, course: Course, db: Session = Depends(get_db), 
 
     if course_model is None:
         raise not_found_course()
-    
+
     course_model.name = course.name
     course_model.description = course.description
     course_model.start_at = course.start_at
@@ -87,6 +87,22 @@ async def update_course(id: int, course: Course, db: Session = Depends(get_db), 
     db.commit()
 
     return successful_response(200, course)
+
+
+@router.delete("/{id}")
+async def delete_course(id: int, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    if user is None:
+        raise get_user_exception()
+
+    course_model = db.query(models.Courses).filter(
+        models.Courses.id == id and models.Courses.owner_id == user.get("id")).first()
+
+    if course_model is None:
+        raise not_found_course()
+
+    db.query(models.Courses).filter(models.Courses.id == id).delete()
+    db.commit()
+    return successful_response(200)
 
 
 def successful_response(status_code: int, content: Optional[dict or list] = None):
