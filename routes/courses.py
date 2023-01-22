@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 
-class CreateCourse(BaseModel):
+class Course(BaseModel):
     name: str
     description: str
     start_at: str
@@ -43,7 +43,7 @@ async def get_all_courses(db: Session = Depends(get_db)):
 
 
 @router.post("/")
-async def create_course(course: CreateCourse, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+async def create_course(course: Course, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
     if user is None:
         raise get_user_exception()
 
@@ -64,9 +64,38 @@ async def create_course(course: CreateCourse, db: Session = Depends(get_db), use
     return successful_response(201, course)
 
 
+@router.put("/{id}")
+async def update_course(id: int, course: Course, db: Session = Depends(get_db), user: dict = Depends(get_current_user)):
+    if user is None:
+        raise get_user_exception()
+
+    course_model = db.query(models.Courses).filter(
+        models.Courses.id == id and models.Courses.owner_id == user.get("id")).first()
+
+    if course_model is None:
+        raise not_found_course()
+    
+    course_model.name = course.name
+    course_model.description = course.description
+    course_model.start_at = course.start_at
+    course_model.end_at = course.end_at
+    course_model.pic = course.pic
+    course_model.institution = course.institution
+    course_model.link = course.link
+
+    db.add(course_model)
+    db.commit()
+
+    return successful_response(200, course)
+
+
 def successful_response(status_code: int, content: Optional[dict or list] = None):
     return {
         "status": status_code,
         "message": "Sucesso!",
         "content": content
     }
+
+
+def not_found_course():
+    return HTTPException(status_code=404, detail="Curso não encontrado")
