@@ -131,31 +131,7 @@ async def create_user(user: CreateUser, db: Session = Depends(get_db)):
     db.add(user_model)
     db.commit()
 
-
-def save_image(img: str):
-    try:
-        if not os.path.exists("uploads"):
-            os.mkdir("uploads")
-
-        imgabe_bytes = base64.b64decode(img, validate=True)
-        image_type = imghdr.what(None, imgabe_bytes)
-        file_path = os.path.join(
-            "uploads", f"image-{uuid.uuid4()}.{image_type}").replace("\\", "/")
-
-        with open(file_path, "wb") as buffer:
-            buffer.write(imgabe_bytes)
-
-        return file_path
-
-    except:
-        return None
-
-
-@router.get('/user/image')
-async def get_image(img: str = None):
-    url = 'uploads\image-99be178b-6f80-4ceb-990d-8a65cadb4b2f.png'
-    return FileResponse(url)
-
+    return successful_response(201, None, user_model)
 
 @router.post("/user/token")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
@@ -249,3 +225,22 @@ def successful_response(status_code: int, token: Optional[str] = None, content: 
         "content": content,
         "token": token
     }
+
+
+def save_image(img: str):
+    try:
+        if not os.path.exists("uploads"):
+            os.mkdir("uploads")
+
+        imgabe_bytes = base64.b64decode(img, validate=True)
+        image_type = imghdr.what(None, imgabe_bytes)
+        file_path = os.path.join(
+            "uploads", f"image-{uuid.uuid4()}.{image_type}").replace("\\", "/")
+
+        with open(file_path, "wb") as buffer:
+            buffer.write(imgabe_bytes)
+
+        return f"image/{file_path}"
+
+    except:
+        return None
