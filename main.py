@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 from routes import auth, projects, experiences, courses
@@ -20,3 +21,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get('/image')
+async def get_image(img: str = None):
+    return FileResponse(img)
