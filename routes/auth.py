@@ -1,14 +1,19 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, File
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 from database import engine, SessionLocal
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import timedelta, datetime
+import base64
+import imghdr
 import models
 import sys
+import os
+import uuid
 sys.path.append("..")
 
 
@@ -51,6 +56,10 @@ class UpdatePassword(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+
+class ImgTest(BaseModel):
+    image: str
 
 
 def get_db():
@@ -114,12 +123,38 @@ async def create_user(user: CreateUser, db: Session = Depends(get_db)):
     user_model.name = user.name
     user_model.email = user.email
     user_model.about = user.about
-    user_model.profile_pic = user.profile_pic
+    img_path = save_image(user.profile_pic)
+    user_model.profile_pic = img_path
     hash_pass = password_hash(user.password)
     user_model.hashed_password = hash_pass
 
     db.add(user_model)
     db.commit()
+
+
+def save_image(img: str):
+    try:
+        if not os.path.exists("uploads"):
+            os.mkdir("uploads")
+
+        imgabe_bytes = base64.b64decode(img, validate=True)
+        image_type = imghdr.what(None, imgabe_bytes)
+        file_path = os.path.join(
+            "uploads", f"image-{uuid.uuid4()}.{image_type}").replace("\\", "/")
+
+        with open(file_path, "wb") as buffer:
+            buffer.write(imgabe_bytes)
+
+        return file_path
+
+    except:
+        return None
+
+
+@router.get('/user/image')
+async def get_image(img: str = None):
+    url = 'uploads\image-99be178b-6f80-4ceb-990d-8a65cadb4b2f.png'
+    return FileResponse(url)
 
 
 @router.post("/user/token")
